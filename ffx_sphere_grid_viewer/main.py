@@ -31,6 +31,8 @@ def show_help_window(title: str) -> None:
         f'- Ctrl + {characters}: add or remove Character Flag',
         '  (the Character Flag will link to the nearest Ring)',
     ]
+    for c, character in KEY_TO_CHAR_NAME.items():
+        lines.append(f'{c.upper()} -> {character}')
     messagebox.showinfo(title, '\n'.join(lines))
 
 
