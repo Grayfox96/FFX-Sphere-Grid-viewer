@@ -4,8 +4,8 @@ from tkinter import messagebox
 
 from .data.layout import (LAYOUT_EXPERT, LAYOUT_ORIGINAL, LAYOUT_STANDARD,
                           Layout)
-from .imagegrab import save_screenshot
 from .logger import UIHandler, log_exceptions, log_tkinter_error
+from .screenshot import save_screenshot
 from .tkspheregrid import (KEY_TO_APPEARANCE_TYPE, KEY_TO_CHAR_NAME,
                            TkSphereGrid)
 from .tkstatuslabel import TkStatusLabel
