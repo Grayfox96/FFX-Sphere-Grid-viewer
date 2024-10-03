@@ -80,7 +80,7 @@ class TkSphereGrid(tk.Canvas):
             if link.centre_node is None:
                 self.create_line(link.node_1.x, link.node_1.y,
                                  link.node_2.x, link.node_2.y,
-                                 width=2)
+                                 width=LINK_WIDTH)
                 continue
             r = dist((link.node_1.x, link.node_1.y),
                      (link.centre_node.x, link.centre_node.y))
@@ -94,7 +94,7 @@ class TkSphereGrid(tk.Canvas):
             self.create_arc(
                 link.centre_node.x - r, link.centre_node.y - r,
                 link.centre_node.x + r, link.centre_node.y + r,
-                style='arc', start=start, extent=extent, width=2)
+                style='arc', start=start, extent=extent, width=LINK_WIDTH)
 
         tk_nodes = []
         tk_nodes_actions = []
@@ -102,12 +102,13 @@ class TkSphereGrid(tk.Canvas):
             if node.content is None:
                 continue
             if node.content.appearance_type is AppearanceType.EMPTY_NODE:
-                r = 10
+                r = CIRCLE_RADIUS * EMPTY_NODE_CIRCLE_SCALE
             else:
-                r = 20
+                r = CIRCLE_RADIUS
             circle_tag = self.create_oval(
-                node.x - r, node.y - r, node.x + r, node.y + r, width=2,
-                fill=self.off_color, tags=Tag.NODE_CIRCLE)
+                node.x - r, node.y - r, node.x + r, node.y + r,
+                width=CIRCLE_OUTLINE_WIDTH, fill=self.off_color,
+                tags=Tag.NODE_CIRCLE)
             if node.content.appearance:
                 coords = [(x + node.x - r, y + node.y - r)
                           for x, y in node.content.appearance]
@@ -163,7 +164,7 @@ class TkSphereGrid(tk.Canvas):
                 break
         if node.node.content.appearance_type not in ACTIONS:
             return
-        if r < 40:
+        if r < CIRCLE_RADIUS * 2 * self.current_zoom:
             return
         text_centre = self.get_bbox_centre(node.text)
         color = self.itemcget(node.text, 'fill')
@@ -212,9 +213,9 @@ class TkSphereGrid(tk.Canvas):
         if (node.node.content.appearance_type == AppearanceType.EMPTY_NODE
                 or new_content.appearance_type == AppearanceType.EMPTY_NODE):
             if node.node.content.appearance_type == AppearanceType.EMPTY_NODE:
-                scale = 2
+                scale = 1 / EMPTY_NODE_CIRCLE_SCALE
             else:
-                scale = 0.5
+                scale = EMPTY_NODE_CIRCLE_SCALE
             centre = self.get_bbox_centre(node.circle)
             self.scale(node.circle, *centre, scale, scale)
             if node.big_circle is not None:
@@ -245,9 +246,10 @@ class TkSphereGrid(tk.Canvas):
 
     def on_scrollwheel(self, event: tk.Event) -> None:
         if event.delta > 0:
-            self.set_zoom(self.current_zoom + 0.1, event)
+            zoom_level = self.current_zoom + ZOOM_STEP
         else:
-            self.set_zoom(max(self.current_zoom - 0.1, 0.1), event)
+            zoom_level = max(self.current_zoom - ZOOM_STEP, ZOOM_MIN, 0.1)
+        self.set_zoom(zoom_level, event)
 
     def set_zoom(self,
                  zoom_level: float,
@@ -304,17 +306,17 @@ class TkSphereGrid(tk.Canvas):
             return
         elif self.type(item_tag) == 'arc':  # noqa: E721
             if self.itemcget(item_tag, 'outline') == color:
-                self.itemconfigure(item_tag, outline='black', width=2)
+                self.itemconfigure(item_tag, outline='black', width=LINK_WIDTH)
                 self.logger.info(f'Turned off Link near ({x},{y})')
             else:
-                self.itemconfigure(item_tag, outline=color, width=4)
+                self.itemconfigure(item_tag, outline=color, width=LINK_WIDTH * 2)
                 self.logger.info(f'Highlighted Link near ({x},{y})')
         elif self.type(item_tag) == 'line':  # noqa: E721
             if self.itemcget(item_tag, 'fill') == color:
-                self.itemconfigure(item_tag, fill='black', width=2)
+                self.itemconfigure(item_tag, fill='black', width=LINK_WIDTH)
                 self.logger.info(f'Turned off Link near ({x},{y})')
             else:
-                self.itemconfigure(item_tag, fill=color, width=4)
+                self.itemconfigure(item_tag, fill=color, width=LINK_WIDTH * 2)
                 self.logger.info(f'Highlighted Link near ({x},{y})')
         else:
             self.logger.info(f'No item found near ({x},{y})')
@@ -351,7 +353,7 @@ class TkSphereGrid(tk.Canvas):
             centre = self.get_bbox_centre(node.circle)
             rectangle_centre = self.get_bbox_centre(rectangle_tag)
             line_tag = self.create_line(
-                *centre, *rectangle_centre, width=4, fill=color)
+                *centre, *rectangle_centre, width=LINK_WIDTH, fill=color)
             if node.big_circle is not None:
                 self.tag_lower(line_tag, node.big_circle)
             else:
@@ -382,9 +384,9 @@ class TkSphereGrid(tk.Canvas):
             return
         color = KEY_TO_CHAR_COLOR[event.keysym.lower()]
         name = KEY_TO_CHAR_NAME[event.keysym.lower()]
-        d = 4 * self.current_zoom
+        d = (BIG_CIRCLE_RADIUS - CIRCLE_RADIUS) * self.current_zoom
         if node.node.content.appearance_type is AppearanceType.EMPTY_NODE:
-            d /= 2
+            d *= EMPTY_NODE_CIRCLE_SCALE
         x0, y0, x1, y1 = self.coords(node.circle)
         big_circle = self.create_oval(
             x0 - d, y0 - d, x1 + d, y1 + d, fill=color, outline=color,
@@ -394,6 +396,14 @@ class TkSphereGrid(tk.Canvas):
         node.big_circle = big_circle
         self.logger.info(f'Added Character Ring ({name}) to {node.node}')
 
+
+CIRCLE_RADIUS = 20
+CIRCLE_OUTLINE_WIDTH = 2
+BIG_CIRCLE_RADIUS = CIRCLE_RADIUS + 4
+EMPTY_NODE_CIRCLE_SCALE = 0.5
+LINK_WIDTH = 4
+ZOOM_STEP = 0.1
+ZOOM_MIN = 0.1
 
 KEY_TO_CHAR_COLOR = {
     'a': '#45b6ff',
