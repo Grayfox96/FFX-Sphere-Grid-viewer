@@ -4,3 +4,4 @@ build
 .venv
 .vscode
 ffx_sphere_grid_viewer.log
+ffx_sphere_grid_viewer_screenshots
