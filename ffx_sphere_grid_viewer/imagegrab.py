@@ -1,44 +1,27 @@
-import tkcap
-import datetime
-from logging import getLogger
+import os
 import tkinter as tk
-from PIL import Image
+from datetime import datetime
+from logging import getLogger
+
+from PIL.ImageGrab import grab
 
 
-def _filename() -> str:
-    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S.png")
+def save_screenshot(widget: tk.Widget,
+                    filename: str | None = None,
+                    format: str = 'png',
+                    ) -> None:
+    x0 = widget.winfo_rootx()
+    y0 = widget.winfo_rooty()
+    x1 = x0 + widget.winfo_width()
+    y1 = y0 + widget.winfo_height()
+    image = grab((x0, y0, x1, y1), all_screens=True)
+    if filename is None:
+        filename = datetime.now().strftime(r'%Y-%m-%d_%H-%M-%S.png')
+    file_path = f'{SCREENSHOTS_DIRECTORY}/{filename}'
+    if not os.path.exists(SCREENSHOTS_DIRECTORY):
+        os.mkdir(SCREENSHOTS_DIRECTORY)
+    image.save(file_path, format)
+    getLogger(__name__).info(f'Saved screenshot to {file_path}')
 
 
-def grab(widget: tk.Widget, xsb, ysb, frame, *args, **kwargs) -> None:
-    # Take a screenshot of the bounding box
-    cap = tkcap.CAP(widget)
-
-    # Get the logger
-    logger = getLogger(__name__)
-
-    # Save the screenshot
-    filename = _filename()
-    cap.capture(filename)
-    logger.info(f"Screenshot saved as {filename}")
-
-    # Load the image
-    image = Image.open(filename)
-
-    # Crop the image to remove scrollbars and window edges
-    # Adjust these values based on the size of your scrollbars and window edges
-    left = 5  # Adjust as needed
-    top = 45  # Adjust as needed
-    right = ysb.winfo_width()  # Adjust as needed
-    bottom = xsb.winfo_height() + frame.winfo_height()  # Adjust as needed
-
-    logger.info(f"Cropping image to {(left, top, right, bottom)}")
-    cropped_image = image.crop(
-        (left, top, image.width - right, image.height - bottom)
-    )
-
-    # Save the cropped screenshot
-    cropped_filename = f"cropped_{filename}"
-    cropped_image.save(cropped_filename, "PNG")
-
-    # Log the action
-    logger.info(f"Saved final screenshot to {filename}")
+SCREENSHOTS_DIRECTORY = 'ffx_sphere_grid_viewer_screenshots'

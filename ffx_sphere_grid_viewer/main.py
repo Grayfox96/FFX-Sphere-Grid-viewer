@@ -4,11 +4,11 @@ from tkinter import messagebox
 
 from .data.layout import (LAYOUT_EXPERT, LAYOUT_ORIGINAL, LAYOUT_STANDARD,
                           Layout)
+from .imagegrab import save_screenshot
 from .logger import UIHandler, log_exceptions, log_tkinter_error
 from .tkspheregrid import (KEY_TO_APPEARANCE_TYPE, KEY_TO_CHAR_NAME,
                            TkSphereGrid)
 from .tkstatuslabel import TkStatusLabel
-from .imagegrab import grab
 
 
 def show_help_window(title: str) -> None:
@@ -25,6 +25,7 @@ def show_help_window(title: str) -> None:
         'F6: load the Original Sphere Grid',
         'F7: load the Standard Sphere Grid',
         'F8: load the Expert Sphere Grid',
+        'F9: save a screenshot of the Sphere Grid (.png, visible part)',
         'The following hotkeys will act based on Mouse position:',
         f'- {edit_node}: change Node Contents',
         f'- {characters}: highlight a Node or color a Link',
@@ -52,7 +53,8 @@ def main(*,
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
-    canvas = TkSphereGrid(root, background="#f2f2f2")
+    canvas = TkSphereGrid(
+        root, background=BACKGROUND_COLOR, borderwidth=0, highlightthickness=0)
     canvas.grid(row=0, column=0, sticky='nsew')
 
     xsb = tk.Scrollbar(root, orient='horizontal', command=canvas.xview)
@@ -88,14 +90,13 @@ def main(*,
         ('<F6>', lambda _=None: canvas.draw_layout(LAYOUT_ORIGINAL), 'Original'),
         ('<F7>', lambda _=None: canvas.draw_layout(LAYOUT_STANDARD), 'Standard'),
         ('<F8>', lambda _=None: canvas.draw_layout(LAYOUT_EXPERT), 'Expert'),
+        ('<F9>', lambda _=None: save_screenshot(canvas), 'Screenshot'),
     ])
     frame = tk.Frame(root)
     frame.grid(row=2, column=0, columnspan=2, sticky='nsew')
     for i, (sequence, command, text) in enumerate(buttons):
         root.bind(sequence, command)
         tk.Button(frame, text=text, command=command).grid(row=0, column=i)
-
-    root.bind("<KeyPress-p>", lambda e: grab(root, xsb, ysb, frame))
 
     status_label = TkStatusLabel(frame)
     status_label.grid(row=0, column=i + 1, sticky='e')
@@ -104,9 +105,12 @@ def main(*,
     formatter = logging.Formatter(
         fmt='{levelname} - {message}',
         style='{',
-        )
+    )
     handler.setFormatter(formatter)
     handler.setLevel(logging.INFO)
     logging.getLogger(__name__.split('.')[0]).addHandler(handler)
 
     root.mainloop()
+
+
+BACKGROUND_COLOR = '#f2f2f2'
