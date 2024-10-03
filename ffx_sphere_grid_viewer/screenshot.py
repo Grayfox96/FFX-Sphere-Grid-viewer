@@ -1,9 +1,16 @@
 import os
+import sys
 import tkinter as tk
 from datetime import datetime
 from logging import getLogger
 
 from PIL.ImageGrab import grab
+
+
+def set_process_dpi_aware_for_windows() -> None:
+    import ctypes
+
+    ctypes.windll.user32.SetProcessDPIAware()
 
 
 def save_screenshot(widget: tk.Widget,
@@ -25,3 +32,8 @@ def save_screenshot(widget: tk.Widget,
 
 
 SCREENSHOTS_DIRECTORY = 'ffx_sphere_grid_viewer_screenshots'
+
+
+if sys.platform == 'win32':
+    getLogger(__name__).info('Setting process for Windows DPI aware')
+    set_process_dpi_aware_for_windows()
