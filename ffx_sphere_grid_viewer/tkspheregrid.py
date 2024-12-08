@@ -13,11 +13,14 @@ from .data.node_types import NODE_TYPES, AppearanceType
 
 
 class Tag(StrEnum):
+    LINK = 'link'
+    HIGHLIGHTED_LINK = 'highlighted_link'
     NODE_CIRCLE = 'node_circle'
     NODE_TEXT = 'node_text'
     NODE_BIG_CIRCLE = 'node_big_circle'
     NODE_LINE = 'node_line'
     FLAG_TEXT = 'flag_text'
+    FLAG_LINE = 'flag_line'
 
 
 @dataclass
@@ -80,7 +83,7 @@ class TkSphereGrid(tk.Canvas):
             if link.centre_node is None:
                 self.create_line(link.node_1.x, link.node_1.y,
                                  link.node_2.x, link.node_2.y,
-                                 width=LINK_WIDTH)
+                                 width=LINK_WIDTH, tags=Tag.LINK)
                 continue
             r = dist((link.node_1.x, link.node_1.y),
                      (link.centre_node.x, link.centre_node.y))
@@ -94,7 +97,8 @@ class TkSphereGrid(tk.Canvas):
             self.create_arc(
                 link.centre_node.x - r, link.centre_node.y - r,
                 link.centre_node.x + r, link.centre_node.y + r,
-                style='arc', start=start, extent=extent, width=LINK_WIDTH)
+                style='arc', start=start, extent=extent, width=LINK_WIDTH,
+                tags=Tag.LINK)
 
         tk_nodes = []
         tk_nodes_actions = []
@@ -264,11 +268,20 @@ class TkSphereGrid(tk.Canvas):
         self.resize_scrollregion()
         self.current_zoom *= scale_factor
         self.itemconfigure(
+            Tag.LINK, width=LINK_WIDTH * self.current_zoom
+        )
+        self.itemconfigure(
+            Tag.HIGHLIGHTED_LINK, width=LINK_WIDTH * 2 * self.current_zoom
+        )
+        self.itemconfigure(
             Tag.NODE_TEXT,
             font=(self.font_family, int(self.font_size * self.current_zoom)))
         self.itemconfigure(
             Tag.FLAG_TEXT,
             font=(self.font_family, int(self.font_size * 2 * self.current_zoom)))
+        self.itemconfigure(
+            Tag.FLAG_LINE, width=LINK_WIDTH * self.current_zoom
+        )
         self.logger.info(f'Set zoom to {self.current_zoom:.0%}')
 
     def highlight_all(self, _: tk.Event | None = None) -> None:
@@ -305,18 +318,30 @@ class TkSphereGrid(tk.Canvas):
                 self.logger.info(f'Turned off {node.node}')
             return
         elif self.type(item_tag) == 'arc':  # noqa: E721
+            link_width = LINK_WIDTH * self.current_zoom
             if self.itemcget(item_tag, 'outline') == color:
-                self.itemconfigure(item_tag, outline='black', width=LINK_WIDTH)
+                self.itemconfigure(
+                    item_tag, outline='black', width=link_width, tags=Tag.LINK
+                    )
                 self.logger.info(f'Turned off Link near ({x},{y})')
             else:
-                self.itemconfigure(item_tag, outline=color, width=LINK_WIDTH * 2)
+                self.itemconfigure(
+                    item_tag, outline=color, width=link_width * 2,
+                    tags=Tag.HIGHLIGHTED_LINK
+                    )
                 self.logger.info(f'Highlighted Link near ({x},{y})')
         elif self.type(item_tag) == 'line':  # noqa: E721
+            link_width = LINK_WIDTH * self.current_zoom
             if self.itemcget(item_tag, 'fill') == color:
-                self.itemconfigure(item_tag, fill='black', width=LINK_WIDTH)
+                self.itemconfigure(
+                    item_tag, fill='black', width=link_width, tags=Tag.LINK
+                    )
                 self.logger.info(f'Turned off Link near ({x},{y})')
             else:
-                self.itemconfigure(item_tag, fill=color, width=LINK_WIDTH * 2)
+                self.itemconfigure(
+                    item_tag, fill=color, width=link_width * 2,
+                    tags=Tag.HIGHLIGHTED_LINK
+                    )
                 self.logger.info(f'Highlighted Link near ({x},{y})')
         else:
             self.logger.info(f'No item found near ({x},{y})')
@@ -353,7 +378,9 @@ class TkSphereGrid(tk.Canvas):
             centre = self.get_bbox_centre(node.circle)
             rectangle_centre = self.get_bbox_centre(rectangle_tag)
             line_tag = self.create_line(
-                *centre, *rectangle_centre, width=LINK_WIDTH, fill=color)
+                *centre, *rectangle_centre, tags=Tag.FLAG_LINE,
+                width=LINK_WIDTH * self.current_zoom, fill=color
+                )
             if node.big_circle is not None:
                 self.tag_lower(line_tag, node.big_circle)
             else:
