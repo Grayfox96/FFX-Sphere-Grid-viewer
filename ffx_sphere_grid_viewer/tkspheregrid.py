@@ -52,7 +52,7 @@ class TkSphereGrid(tk.Canvas):
         self.off_color = '#888888'
         default_font = font.nametofont('TkDefaultFont')
         self.font_family = default_font.cget('family')
-        self.font_size = 8
+        self.font_size = 10
         self.logger = getLogger(__name__)
 
     def resize_scrollregion(self) -> None:
@@ -122,7 +122,7 @@ class TkSphereGrid(tk.Canvas):
             text_tag = self.create_text(
                 node.x, node.y, text=node.content.display_name,
                 fill=self.off_color, tags=Tag.NODE_TEXT,
-                font=(self.font_family, self.font_size))
+                font=(self.font_family, self.font_size, 'bold'))
             tk_node = TkNode(node, circle_tag, polygon_tag, text_tag)
             if node.content.appearance_type in ACTIONS:
                 tk_nodes_actions.append(tk_node)
